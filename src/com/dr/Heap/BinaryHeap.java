@@ -8,12 +8,28 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements BinaryTreeInfo {
     private E[] elements;
     private static final int DEFAULT_CAPACITY = 10;
     public BinaryHeap(Comparator<E> comparator) {
-        super(comparator);
-        this.elements = (E[]) new Object[DEFAULT_CAPACITY];
+        this(null, comparator);
     }
 
     public BinaryHeap() {
-        this(null);
+        this(null, null);
+    }
+
+    public BinaryHeap(E[] elements, Comparator<E> comparator) {
+        super(comparator);
+        if (elements == null || elements.length == 0) {
+            this.elements = (E[])new Object[DEFAULT_CAPACITY];
+        } else {
+            int capacity = Math.max(DEFAULT_CAPACITY, elements.length);
+            this.elements = (E[])new Object[capacity];
+            for (int i = 0; i < capacity; i++) {
+                this.elements[i] = elements[i];
+            }
+        }
+    }
+
+    public BinaryHeap(E[] elements) {
+        this(elements, null);
     }
 
     @Override
@@ -137,6 +153,13 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements BinaryTreeInfo {
             siftDown(0);
         }
         return root;
+    }
+
+    // heapify成堆操作
+    public void heapify(E[] arr) {
+        for (int i = (size >> 1) - 1; i >= 0; i--) {
+            siftDown(i);
+        }
     }
 
     private void emptyCheck() {
