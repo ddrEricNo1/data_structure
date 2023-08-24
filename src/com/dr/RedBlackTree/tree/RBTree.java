@@ -16,52 +16,52 @@ public class RBTree<E> extends BBST<E> {
 
     @Override
     protected void afterAdd(Node<E> node) {
-        Node<E> parent = node.parent;
+            Node<E> parent = node.parent;
 
-        // 添加的是根节点
-        if (parent == null) {
-            black(node);
-            return;
-        }
-
-        // 如果父节点是黑色，直接返回
-        if (isBlack(parent)) return;
-
-        // 叔父节点
-        Node<E> uncle = node.sibling();
-        // 祖父节点
-        Node<E> grand = red(parent.parent);
-        if (isRed(uncle)) { // 叔父节点是红色【B树节点上溢】
-            black(parent);
-            black(uncle);
-            // 把祖父节点当作是新添加的节点
-            afterAdd(grand);
-            return;
-        }
-
-        // 叔父节点不是红色
-        if (parent.isLeftChild()) { // L
-            if (node.isLeftChild()) { // LL
-                black(parent);
-            } else { // LR
+            // 添加的是根节点
+            if (parent == null) {
                 black(node);
-                rotateLeft(parent);
+                return;
             }
-            rotateRight(grand);
-        } else { // R
-            if (node.isLeftChild()) { // RL
-                black(node);
-                rotateRight(parent);
-            } else { // RR
-                black(parent);
-            }
-            rotateLeft(grand);
-        }
-    }
 
-    @Override
-    protected void afterRemove(Node<E> node) {
-        if (node == null) {
+            // 如果父节点是黑色，直接返回
+            if (isBlack(parent)) return;
+
+            // 叔父节点
+            Node<E> uncle = node.sibling();
+            // 祖父节点
+            Node<E> grand = red(parent.parent);
+            if (isRed(uncle)) { // 叔父节点是红色【B树节点上溢】
+                black(parent);
+                black(uncle);
+                // 把祖父节点当作是新添加的节点
+                afterAdd(grand);
+                return;
+            }
+
+            // 叔父节点不是红色
+            if (parent.isLeftChild()) { // L
+                if (node.isLeftChild()) { // LL
+                    black(parent);
+                } else { // LR
+                    black(node);
+                    rotateLeft(parent);
+                }
+                rotateRight(grand);
+            } else { // R
+                if (node.isLeftChild()) { // RL
+                    black(node);
+                    rotateRight(parent);
+                } else { // RR
+                    black(parent);
+                }
+                rotateLeft(grand);
+            }
+        }
+
+        @Override
+        protected void afterRemove(Node<E> node) {
+            if (node == null) {
             return;
         }
         // 如果删除的节点是红色

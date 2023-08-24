@@ -11,3 +11,5 @@ This repo is to provide the basic JAVA-implemented data structures.
 * Binary Search Tree
 * AVL Tree
 * Red Black Tree
+* HashMap
+* Binary Heap
