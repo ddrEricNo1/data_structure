@@ -2,10 +2,18 @@ package com.dr.Graph;
 
 import java.util.*;
 
-public class ListGraph<V, E> implements Graph<V, E> {
+public class ListGraph<V, E> extends Graph<V, E> {
+    private Comparator<Edge<V, E>> edgeComparator = (Edge<V, E> e1, Edge<V, E> e2) -> {
+      return weightManager.compare(e1.weight, e2.weight);
+    };
     // 存储所有的顶点, V与顶点的映射
     private Map<V, Vertex<V, E>> vertices = new HashMap<>();
     private Set<Edge<V, E>> edges = new HashSet<>();
+    public ListGraph() {}
+    public ListGraph(WeightManager<E> weightManager) {
+        super(weightManager);
+    }
+
     public void print() {
         // lambda表达式
         System.out.println("【顶点】");
@@ -116,7 +124,11 @@ public class ListGraph<V, E> implements Graph<V, E> {
 
     // 宽度优先遍历很像二叉树的层序遍历
     @Override
-    public void bfs(V begin) {
+    public void bfs(V begin, VertexVisitor<V> visitor) {
+        if (visitor == null) {
+            return;
+        }
+
         Vertex<V, E> beginVertex = vertices.get(begin);
         if (beginVertex == null) {
             return;
@@ -128,7 +140,9 @@ public class ListGraph<V, E> implements Graph<V, E> {
         visitedVertices.add(beginVertex);
         while (!queue.isEmpty()) {
             Vertex<V, E> vertex = queue.poll();
-            System.out.println(vertex.value);
+            if (visitor.visit(vertex.value)) {
+                return;
+            }
             for (Edge<V, E> edge: vertex.outEdges) {
                 // 判断是否重复添加
                 if (visitedVertices.contains(edge.to)) {
@@ -139,6 +153,130 @@ public class ListGraph<V, E> implements Graph<V, E> {
             }
         }
     }
+
+    // 深度优先遍历的递归形式
+//    @Override
+//    public void dfs(V begin) {
+//        Vertex<V, E> beginVertex = vertices.get(begin);
+//        if (beginVertex == null) {
+//            return;
+//        }
+//        Set<Vertex<V, E>> visitedVertices = new HashSet<>();
+//        dfs(beginVertex, visitedVertices);
+//    }
+
+    @Override
+    public void dfs(V begin, VertexVisitor<V> visitor) {
+        if (visitor == null) {
+            return;
+        }
+        Vertex<V, E> beginVertex = vertices.get(begin);
+        if (beginVertex == null) {
+            return;
+        }
+        Set<Vertex<V, E>> visitedVertices = new HashSet<>();
+        Stack<Vertex<V, E>> stack = new Stack();
+
+        // 先访问起点
+        stack.push(beginVertex);
+        visitedVertices.add(beginVertex);
+        //System.out.println(beginVertex.value);
+        if (visitor.visit(begin)) {
+            return;
+        }
+        while (!stack.isEmpty()) {
+            Vertex<V, E> vertex = stack.pop();
+            for (Edge<V, E> edge: vertex.outEdges) {
+                if (visitedVertices.contains(edge.to)) {
+                    continue;
+                }
+                // 这条边是新的
+                stack.push(edge.from);
+                stack.push(edge.to);
+                visitedVertices.add(edge.to);
+                //System.out.println(edge.to.value);
+                if (visitor.visit(edge.to.value)) {
+                    return;
+                }
+                break;
+            }
+        }
+    }
+
+    @Override
+    public List<V> topologicalSort() {
+        List<V> list = new ArrayList<>();
+        Queue<Vertex<V, E>> queue = new LinkedList<>();
+        Map<Vertex<V, E>, Integer> ins = new HashMap<>();
+        // 初始化，将所有度为0的入队
+        vertices.forEach((V v, Vertex<V, E> vertex) -> {
+            int in = vertex.inEdges.size();
+            if (in == 0) {
+                queue.offer(vertex);
+            } else {
+                ins.put(vertex, in);
+            }
+        });
+        while (!queue.isEmpty()) {
+            Vertex<V, E> vertex = queue.poll();
+            // 放入返回结果中
+            list.add(vertex.value);
+            // 遍历outEdges
+            for (Edge<V, E> edge: vertex.outEdges) {
+                int toIn = ins.get(edge.to) - 1;
+                if (toIn == 0) {
+                    queue.offer(edge.to);
+                } else {
+                    ins.put(edge.to, toIn);
+                }
+            }
+            
+        }
+        return list;
+    }
+
+
+    private Set<EdgeInfo<V, E>> prim() {
+       Set<EdgeInfo<V, E>> edgeInfos = new HashSet<>();
+       Iterator<Vertex<V, E>> it = vertices.values().iterator();
+       // 没有顶点，返回空
+       if (!it.hasNext()) {
+           return null;
+       }
+       Vertex<V, E> vertex = it.next();
+       // 传入lambda表达式
+        MinHeap<Edge<V, E>> heap = new MinHeap<>(vertex.outEdges, edgeComparator);
+        Set<Vertex<V, E>> addedVertices = new HashSet<>();
+        addedVertices.add(vertex);
+        int edgeSize = vertices.size() - 1;
+        // 选择一个顶点，取出所有outEdges
+        while (!heap.isEmpty() && edgeInfos.size() < edgeSize) {
+            Edge<V, E> edge = heap.remove();
+            if (addedVertices.contains(edge.to)) {
+                continue;
+            }
+
+            edgeInfos.add(edge.info());
+            addedVertices.add(edge.to);
+            heap.addAll(edge.to.outEdges);
+        }
+        return edgeInfos;
+    }
+
+    // prim算法得到最小生成树
+    public Set<EdgeInfo<V, E>> mst() {
+        return prim();
+    }
+
+    private void dfs(Vertex<V, E> vertex, Set<Vertex<V, E>> visitedVertices) {
+        System.out.println(vertex.value);
+        visitedVertices.add(vertex);
+        for (Edge<V, E> edge: vertex.outEdges) {
+            if (visitedVertices.contains(edge.to)) continue;
+            dfs(edge.to, visitedVertices);
+        }
+    }
+
 
     // 顶点
     private static class Vertex<V, E> {
@@ -196,6 +334,10 @@ public class ListGraph<V, E> implements Graph<V, E> {
         @Override
         public String toString() {
            return "Edge [from=" + from + ", to=" + to +", weight=" + weight + "]";
+        }
+
+        public EdgeInfo<V, E> info() {
+            return new EdgeInfo<>(from.value, to.value, weight);
         }
     }
 }
